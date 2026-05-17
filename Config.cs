@@ -37,6 +37,10 @@ public class Config : BasePluginConfig
     [JsonPropertyName("Discord")]
     public DiscordConfig Discord { get; set; } = new();
 
+    /// <summary>Discord embed 타이틀 클릭 시 연결될 CS2KR 웹 주소 (말미 / 없이).</summary>
+    [JsonPropertyName("WebBaseUrl")]
+    public string WebBaseUrl { get; set; } = "https://cs2.kr";
+
     /// <summary>0 = 자동 감지 (ConVar hostport + sa_servers 매칭). 매칭 실패 시 NULL 로 동작.</summary>
     [JsonPropertyName("ServerIdOverride")]
     public int ServerIdOverride { get; set; } = 0;

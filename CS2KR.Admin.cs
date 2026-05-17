@@ -50,7 +50,7 @@ public sealed class CS2KRAdminPlugin : BasePlugin, IPluginConfig<Config>
         EventRepo = new EventRepository(Db);
         ServerRepo = new ServerRepository(Db);
 
-        Discord = new DiscordWebhookService(Config.Discord, Logger);
+        Discord = new DiscordWebhookService(Config.Discord, Config.WebBaseUrl, Logger);
         Permissions = new PermissionService(this);
         Enforcement = new EnforcementService(this);
         Identity = new ServerIdentityService(this);

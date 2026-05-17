@@ -101,49 +101,42 @@ public sealed class EventPollService
         if (!await _plugin.EventRepo.TryClaimDiscordAsync(ev.Id))
             return;
 
-        var serverName = await ResolveServerNameAsync(ev.ServerId);
         var targetSid = ev.TargetSteamId ?? "0";
         var targetAvatar = Get(payload, "target_avatar");
+        var recordId = ev.TargetRecordId;
 
         switch (ev.EventType)
         {
             case "ban":
                 _plugin.Discord.SendBan(new DiscordWebhookService.BanInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration, serverName));
+                    recordId, targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration));
                 break;
             case "unban":
                 _plugin.Discord.SendUnban(new DiscordWebhookService.UnbanInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, serverName));
+                    recordId, targetSid, targetName, targetAvatar, adminSteamId, adminName, reason));
                 break;
             case "ban_edit":
                 _plugin.Discord.SendBanEdit(new DiscordWebhookService.BanEditInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration, serverName));
+                    recordId, targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration));
                 break;
             case "mute":
                 _plugin.Discord.SendMute(new DiscordWebhookService.MuteInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration,
-                    muteType ?? "MUTE", serverName));
+                    recordId, targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration,
+                    muteType ?? "MUTE"));
                 break;
             case "unmute":
             case "mute_edit":
                 _plugin.Discord.SendUnmute(new DiscordWebhookService.UnmuteInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, muteType, serverName));
+                    recordId, targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, muteType));
                 break;
             case "kick":
                 _plugin.Discord.SendKick(new DiscordWebhookService.KickInfo(
-                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason));
                 break;
             default:
                 _plugin.Logger.LogDebug("Discord 미지원 이벤트 타입: {T}", ev.EventType);
                 break;
         }
-    }
-
-    private async Task<string?> ResolveServerNameAsync(int? serverId)
-    {
-        if (serverId == null) return null;
-        try { return await _plugin.ServerRepo.GetHostnameByIdAsync(serverId.Value); }
-        catch { return null; }
     }
 
     // ───── payload 헬퍼 ─────

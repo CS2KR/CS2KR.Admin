@@ -30,7 +30,7 @@ public static class ServerCommands
         Server.ExecuteCommand($"changelevel {map}");
 
         plugin.Discord.SendMapChange(new DiscordWebhookService.MapInfo(
-            adminSid, adminName, map, plugin.ServerName));
+            adminSid, adminName, map));
     }
 
     private static void OnRcon(CS2KRAdminPlugin plugin, CCSPlayerController? caller, CommandInfo info)
@@ -45,7 +45,7 @@ public static class ServerCommands
         CommandHelpers.Reply(info, plugin, $"RCON 실행: {cmd}");
 
         plugin.Discord.SendRcon(new DiscordWebhookService.RconInfo(
-            adminSid, adminName, cmd, plugin.ServerName));
+            adminSid, adminName, cmd));
     }
 
     private static void OnWho(CS2KRAdminPlugin plugin, CCSPlayerController? caller, CommandInfo info)
