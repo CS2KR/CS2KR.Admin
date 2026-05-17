@@ -41,38 +41,38 @@ public sealed class DiscordWebhookService
     // ───────────────────────── 정보 구조 ─────────────────────────
 
     public sealed record BanInfo(
-        string TargetSteamId, string? TargetName,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason, int DurationMinutes,
         string? ServerName);
 
     public sealed record UnbanInfo(
-        string TargetSteamId,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason,
         string? ServerName);
 
     public sealed record BanEditInfo(
-        string TargetSteamId,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason, int DurationMinutes,
         string? ServerName);
 
     public sealed record MuteInfo(
-        string TargetSteamId, string? TargetName,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason, int DurationMinutes,
         string Type,
         string? ServerName);
 
     public sealed record UnmuteInfo(
-        string TargetSteamId,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason, string? Type,
         string? ServerName);
 
     public sealed record KickInfo(
-        string TargetSteamId, string? TargetName,
+        string TargetSteamId, string? TargetName, string? TargetAvatar,
         string AdminSteamId, string AdminName,
         string Reason,
         string? ServerName);
@@ -90,41 +90,44 @@ public sealed class DiscordWebhookService
     // ───────────────────────── 빌더 ─────────────────────────
 
     private object BuildBanEmbed(BanInfo i) => Embed(
-        title: "🔨 밴 발급",
+        title: "🔨 CS2.KR 밴 등록",
         color: 0xE74C3C,
         description: i.Reason,
         url: SteamUrl(i.TargetSteamId),
-        fields: new (string, string, bool)[]
+        thumbnailUrl: i.TargetAvatar,
+        fields: new[]
         {
-            ("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
-            ("발급자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("기간", DurationText(i.DurationMinutes), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+            Field("발급자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("기간", DurationText(i.DurationMinutes), false),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     private object BuildUnbanEmbed(UnbanInfo i) => Embed(
-        title: "✅ 밴 해제",
+        title: "✅ CS2.KR 밴 해제",
         color: 0x2ECC71,
         description: i.Reason,
         url: SteamUrl(i.TargetSteamId),
-        fields: new (string, string, bool)[]
+        thumbnailUrl: i.TargetAvatar,
+        fields: new[]
         {
-            ("대상", PlayerLink(null, i.TargetSteamId), true),
-            ("해제자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+            Field("해제자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     private object BuildBanEditEmbed(BanEditInfo i) => Embed(
-        title: "✏️ 밴 정보 수정",
+        title: "✏️ CS2.KR 밴 수정",
         color: 0xF39C12,
         description: i.Reason,
         url: SteamUrl(i.TargetSteamId),
-        fields: new (string, string, bool)[]
+        thumbnailUrl: i.TargetAvatar,
+        fields: new[]
         {
-            ("대상", PlayerLink(null, i.TargetSteamId), true),
-            ("수정자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("기간", DurationText(i.DurationMinutes), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+            Field("수정자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("기간", DurationText(i.DurationMinutes), false),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     private object BuildMuteEmbed(MuteInfo i)
@@ -137,16 +140,17 @@ public sealed class DiscordWebhookService
             _         => ("🔇", i.Type,           0xE67E22),
         };
         return Embed(
-            title: $"{emoji} {label}",
+            title: $"{emoji} CS2.KR {label}",
             color: color,
             description: i.Reason,
             url: SteamUrl(i.TargetSteamId),
-            fields: new (string, string, bool)[]
+            thumbnailUrl: i.TargetAvatar,
+            fields: new[]
             {
-                ("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
-                ("발급자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-                ("기간", DurationText(i.DurationMinutes), true),
-                ("서버", i.ServerName ?? "전체 서버", true),
+                Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+                Field("발급자", AdminLink(i.AdminName, i.AdminSteamId), true),
+                Field("기간", DurationText(i.DurationMinutes), false),
+                Field("서버", i.ServerName ?? "전체 서버", true),
             });
     }
 
@@ -160,59 +164,73 @@ public sealed class DiscordWebhookService
             _         => "차단 해제",
         };
         return Embed(
-            title: $"✅ {label}",
+            title: $"✅ CS2.KR {label}",
             color: 0x2ECC71,
             description: i.Reason,
             url: SteamUrl(i.TargetSteamId),
-            fields: new (string, string, bool)[]
+            thumbnailUrl: i.TargetAvatar,
+            fields: new[]
             {
-                ("대상", PlayerLink(null, i.TargetSteamId), true),
-                ("해제자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-                ("서버", i.ServerName ?? "전체 서버", true),
+                Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+                Field("해제자", AdminLink(i.AdminName, i.AdminSteamId), true),
+                Field("서버", i.ServerName ?? "전체 서버", true),
             });
     }
 
     private object BuildKickEmbed(KickInfo i) => Embed(
-        title: "👢 킥",
+        title: "👢 CS2.KR 킥",
         color: 0xE67E22,
         description: i.Reason,
         url: SteamUrl(i.TargetSteamId),
-        fields: new (string, string, bool)[]
+        thumbnailUrl: i.TargetAvatar,
+        fields: new[]
         {
-            ("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
-            ("발급자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("대상", PlayerLink(i.TargetName, i.TargetSteamId), true),
+            Field("발급자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     private object BuildRconEmbed(RconInfo i) => Embed(
-        title: "💻 RCON 명령",
+        title: "💻 CS2.KR RCON",
         color: 0x95A5A6,
         description: $"```\n{Trim(i.Command, 3900)}\n```",
-        fields: new (string, string, bool)[]
+        fields: new[]
         {
-            ("실행자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("실행자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     private object BuildMapEmbed(MapInfo i) => Embed(
-        title: "🗺️ 맵 변경",
+        title: "🗺️ CS2.KR 맵 변경",
         color: 0x3498DB,
         description: $"`{i.Map}` 로 맵을 변경합니다.",
-        fields: new (string, string, bool)[]
+        fields: new[]
         {
-            ("실행자", PlayerLink(i.AdminName, i.AdminSteamId), true),
-            ("서버", i.ServerName ?? "전체 서버", true),
+            Field("실행자", AdminLink(i.AdminName, i.AdminSteamId), true),
+            Field("서버", i.ServerName ?? "전체 서버", true),
         });
 
     // ───────────────────────── 헬퍼 ─────────────────────────
 
     private static string SteamUrl(string steamId64) => $"https://steamcommunity.com/profiles/{steamId64}";
 
+    /// <summary>대상 — 닉네임 클릭하면 Steam 프로필.</summary>
     private static string PlayerLink(string? name, string steamId64)
     {
         var display = string.IsNullOrWhiteSpace(name) ? steamId64 : name;
-        return $"[{Escape(display)}]({SteamUrl(steamId64)})\n`{steamId64}`";
+        return $"**[{Escape(display)}]({SteamUrl(steamId64)})**";
     }
+
+    /// <summary>발급자/해제자 — 닉네임만 클릭 가능, SteamID 미표시.</summary>
+    private static string AdminLink(string? name, string steamId64)
+    {
+        var display = string.IsNullOrWhiteSpace(name) ? steamId64 : name;
+        return $"[{Escape(display)}]({SteamUrl(steamId64)})";
+    }
+
+    private record struct EmbedField(string Name, string Value, bool Inline);
+
+    private static EmbedField Field(string name, string value, bool inline) => new(name, value, inline);
 
     private static string DurationText(int minutes)
     {
@@ -233,19 +251,20 @@ public sealed class DiscordWebhookService
         int color,
         string? description = null,
         string? url = null,
-        (string name, string value, bool inline)[]? fields = null)
+        string? thumbnailUrl = null,
+        EmbedField[]? fields = null)
     {
         // description: max 4096
         if (description != null && description.Length > 4090)
             description = description[..4090] + "…";
 
         // field.value: max 1024
-        var safeFields = (fields ?? Array.Empty<(string, string, bool)>())
+        var safeFields = (fields ?? Array.Empty<EmbedField>())
             .Select(f => new
             {
-                name = f.name,
-                value = f.value.Length > 1020 ? f.value[..1020] + "…" : f.value,
-                inline = f.inline,
+                name = f.Name,
+                value = f.Value.Length > 1020 ? f.Value[..1020] + "…" : f.Value,
+                inline = f.Inline,
             })
             .ToArray();
 
@@ -255,6 +274,7 @@ public sealed class DiscordWebhookService
             color,
             url,
             description,
+            thumbnail = string.IsNullOrWhiteSpace(thumbnailUrl) ? null : new { url = thumbnailUrl },
             fields = safeFields,
             timestamp = DateTimeOffset.UtcNow.ToOffset(KST_OFFSET).ToString("o"),
             footer = new { text = BRAND_NAME },

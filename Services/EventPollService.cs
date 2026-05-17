@@ -103,34 +103,35 @@ public sealed class EventPollService
 
         var serverName = await ResolveServerNameAsync(ev.ServerId);
         var targetSid = ev.TargetSteamId ?? "0";
+        var targetAvatar = Get(payload, "target_avatar");
 
         switch (ev.EventType)
         {
             case "ban":
                 _plugin.Discord.SendBan(new DiscordWebhookService.BanInfo(
-                    targetSid, targetName, adminSteamId, adminName, reason, duration, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration, serverName));
                 break;
             case "unban":
                 _plugin.Discord.SendUnban(new DiscordWebhookService.UnbanInfo(
-                    targetSid, adminSteamId, adminName, reason, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, serverName));
                 break;
             case "ban_edit":
                 _plugin.Discord.SendBanEdit(new DiscordWebhookService.BanEditInfo(
-                    targetSid, adminSteamId, adminName, reason, duration, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration, serverName));
                 break;
             case "mute":
                 _plugin.Discord.SendMute(new DiscordWebhookService.MuteInfo(
-                    targetSid, targetName, adminSteamId, adminName, reason, duration,
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, duration,
                     muteType ?? "MUTE", serverName));
                 break;
             case "unmute":
             case "mute_edit":
                 _plugin.Discord.SendUnmute(new DiscordWebhookService.UnmuteInfo(
-                    targetSid, adminSteamId, adminName, reason, muteType, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, muteType, serverName));
                 break;
             case "kick":
                 _plugin.Discord.SendKick(new DiscordWebhookService.KickInfo(
-                    targetSid, targetName, adminSteamId, adminName, reason, serverName));
+                    targetSid, targetName, targetAvatar, adminSteamId, adminName, reason, serverName));
                 break;
             default:
                 _plugin.Logger.LogDebug("Discord 미지원 이벤트 타입: {T}", ev.EventType);
