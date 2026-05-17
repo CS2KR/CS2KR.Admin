@@ -29,10 +29,8 @@ public sealed class DiscordWebhookService
         _logger = logger;
     }
 
-    private string BansListUrl => $"{_webBaseUrl}/admin/bans";
-    private string MutesListUrl => $"{_webBaseUrl}/admin/mutes";
-    private string BanEditUrl(long? id) => id.HasValue ? $"{_webBaseUrl}/admin/bans/{id}/edit" : BansListUrl;
-    private string MuteEditUrl(long? id) => id.HasValue ? $"{_webBaseUrl}/admin/mutes/{id}/edit" : MutesListUrl;
+    /// <summary>해당 플레이어의 공개 제재 이력 페이지 (누구나 열람 가능).</summary>
+    private string PublicBansUrl(string steamId64) => $"{_webBaseUrl}/bans?q={steamId64}";
 
     // ───────────────────────── 공개 API ─────────────────────────
 
@@ -97,7 +95,7 @@ public sealed class DiscordWebhookService
         title: "🔨 CS2.KR 밴 등록",
         color: 0xE74C3C,
         description: i.Reason,
-        url: BanEditUrl(i.RecordId),
+        url: PublicBansUrl(i.TargetSteamId),
         thumbnailUrl: i.TargetAvatar,
         fields: new[]
         {
@@ -110,7 +108,7 @@ public sealed class DiscordWebhookService
         title: "✅ CS2.KR 밴 해제",
         color: 0x2ECC71,
         description: i.Reason,
-        url: BanEditUrl(i.RecordId),
+        url: PublicBansUrl(i.TargetSteamId),
         thumbnailUrl: i.TargetAvatar,
         fields: new[]
         {
@@ -122,7 +120,7 @@ public sealed class DiscordWebhookService
         title: "✏️ CS2.KR 밴 수정",
         color: 0xF39C12,
         description: i.Reason,
-        url: BanEditUrl(i.RecordId),
+        url: PublicBansUrl(i.TargetSteamId),
         thumbnailUrl: i.TargetAvatar,
         fields: new[]
         {
@@ -144,7 +142,7 @@ public sealed class DiscordWebhookService
             title: $"{emoji} CS2.KR {label}",
             color: color,
             description: i.Reason,
-            url: MuteEditUrl(i.RecordId),
+            url: PublicBansUrl(i.TargetSteamId),
             thumbnailUrl: i.TargetAvatar,
             fields: new[]
             {
@@ -167,7 +165,7 @@ public sealed class DiscordWebhookService
             title: $"✅ CS2.KR {label}",
             color: 0x2ECC71,
             description: i.Reason,
-            url: MuteEditUrl(i.RecordId),
+            url: PublicBansUrl(i.TargetSteamId),
             thumbnailUrl: i.TargetAvatar,
             fields: new[]
             {
@@ -180,7 +178,7 @@ public sealed class DiscordWebhookService
         title: "👢 CS2.KR 킥",
         color: 0xE67E22,
         description: i.Reason,
-        url: SteamUrl(i.TargetSteamId),
+        url: PublicBansUrl(i.TargetSteamId),
         thumbnailUrl: i.TargetAvatar,
         fields: new[]
         {
