@@ -50,13 +50,11 @@ public static class PlayerCommands
                 try
                 {
                     await plugin.EventRepo.EmitAsync("kick", pSid, null,
-                        CommandHelpers.PayloadJson(new { reason, admin_steamid = adminSid, admin_name = adminName, source = "ingame" }), null);
-
-                    plugin.Discord.Send("kick", new()
-                    {
-                        ["대상"] = $"{pName} ({pSid})", ["사유"] = reason,
-                        ["발급자"] = adminName, ["출처"] = "인게임",
-                    });
+                        CommandHelpers.PayloadJson(new
+                        {
+                            reason, target_name = pName,
+                            admin_steamid = adminSid, admin_name = adminName, source = "ingame",
+                        }), null);
                 }
                 catch (Exception e) { plugin.Logger.LogWarning(e, "kick 이벤트 발행 실패"); }
             });

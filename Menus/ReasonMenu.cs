@@ -65,17 +65,13 @@ public static class ReasonMenu
             {
                 var banId = await plugin.BanRepo.InsertAsync(pSid, pName, pIp, reason, minutes, adminSid, adminName, null);
                 await plugin.EventRepo.EmitAsync("ban", pSid, banId,
-                    CommandHelpers.PayloadJson(new { reason, duration = minutes, admin_steamid = adminSid, admin_name = adminName, source = "ingame" }), null);
+                    CommandHelpers.PayloadJson(new
+                    {
+                        reason, duration = minutes, target_name = pName,
+                        admin_steamid = adminSid, admin_name = adminName, source = "ingame",
+                    }), null);
 
                 Server.NextFrame(() => plugin.Enforcement.KickIfPresent(tSidUlong, reason));
-
-                plugin.Discord.Send("ban", new()
-                {
-                    ["대상"] = $"{pName} ({pSid})", ["사유"] = reason,
-                    ["기간"] = minutes == 0 ? "영구" : $"{minutes}분",
-                    ["발급자"] = adminName, ["출처"] = "인게임",
-                });
-
                 Server.NextFrame(() => Server.PrintToChatAll($"{plugin.Config.ChatPrefix}{adminName} 님이 {pName} 을(를) 밴했습니다. 사유: {reason}"));
             }
             catch (Exception e) { plugin.Logger.LogError(e, "menu ban 실패"); }
@@ -102,17 +98,13 @@ public static class ReasonMenu
             {
                 var muteId = await plugin.MuteRepo.InsertAsync(pSid, pName, reason, minutes, type, adminSid, adminName, null);
                 await plugin.EventRepo.EmitAsync("mute", pSid, muteId,
-                    CommandHelpers.PayloadJson(new { reason, duration = minutes, type, admin_steamid = adminSid, admin_name = adminName, source = "ingame" }), null);
+                    CommandHelpers.PayloadJson(new
+                    {
+                        reason, duration = minutes, type, target_name = pName,
+                        admin_steamid = adminSid, admin_name = adminName, source = "ingame",
+                    }), null);
 
                 Server.NextFrame(() => plugin.Enforcement.ApplyMute(tSidUlong, type));
-
-                plugin.Discord.Send("mute", new()
-                {
-                    ["대상"] = $"{pName} ({pSid})", ["종류"] = type, ["사유"] = reason,
-                    ["기간"] = minutes == 0 ? "영구" : $"{minutes}분",
-                    ["발급자"] = adminName, ["출처"] = "인게임",
-                });
-
                 Server.NextFrame(() => Server.PrintToChatAll($"{plugin.Config.ChatPrefix}{adminName} 님이 {pName} 을(를) 차단했습니다."));
             }
             catch (Exception e) { plugin.Logger.LogError(e, "menu mute 실패"); }
@@ -140,13 +132,11 @@ public static class ReasonMenu
             try
             {
                 await plugin.EventRepo.EmitAsync("kick", pSid, null,
-                    CommandHelpers.PayloadJson(new { reason, admin_steamid = adminSid, admin_name = adminName, source = "ingame" }), null);
-
-                plugin.Discord.Send("kick", new()
-                {
-                    ["대상"] = $"{pName} ({pSid})", ["사유"] = reason,
-                    ["발급자"] = adminName, ["출처"] = "인게임",
-                });
+                    CommandHelpers.PayloadJson(new
+                    {
+                        reason, target_name = pName,
+                        admin_steamid = adminSid, admin_name = adminName, source = "ingame",
+                    }), null);
             }
             catch (Exception e) { plugin.Logger.LogWarning(e, "menu kick 이벤트 실패"); }
         });

@@ -41,16 +41,22 @@ public sealed class ServerIdentityService
         if (_plugin.Config.ServerIdOverride > 0)
         {
             _plugin.ServerId = _plugin.Config.ServerIdOverride;
-            _plugin.Logger.LogInformation("server_id={Id} (수동 override)", _plugin.ServerId);
+            try
+            {
+                _plugin.ServerName = await _plugin.ServerRepo.GetHostnameByIdAsync(_plugin.Config.ServerIdOverride);
+            }
+            catch { /* 무시 */ }
+            _plugin.Logger.LogInformation("server_id={Id} ({Name}) (수동 override)", _plugin.ServerId, _plugin.ServerName ?? "?");
             return;
         }
 
         try
         {
-            var sid = await _plugin.ServerRepo.FindServerIdAsync(address, port);
+            var (sid, name) = await _plugin.ServerRepo.FindServerAsync(address, port);
             _plugin.ServerId = sid;
+            _plugin.ServerName = name;
             if (sid.HasValue)
-                _plugin.Logger.LogInformation("server_id={Id} (sa_servers 자동 매칭, address={A}, port={P})", sid, address ?? "?", port);
+                _plugin.Logger.LogInformation("server_id={Id} ({Name}) (sa_servers 자동 매칭, address={A}, port={P})", sid, name ?? "?", address ?? "?", port);
             else
                 _plugin.Logger.LogWarning("sa_servers 매칭 실패 (address={A}, port={P}) — 글로벌 NULL 모드로 동작", address ?? "?", port);
         }

@@ -61,18 +61,11 @@ public static class MuteCommands
                         CommandHelpers.PayloadJson(new
                         {
                             reason, duration = minutes, type,
+                            target_name = pName,
                             admin_steamid = adminSid, admin_name = adminName, source = "ingame",
                         }), null);
 
                     Server.NextFrame(() => plugin.Enforcement.ApplyMute(target.SteamID, type));
-
-                    plugin.Discord.Send("mute", new()
-                    {
-                        ["대상"] = $"{pName} ({pSid})",
-                        ["종류"] = type, ["사유"] = reason,
-                        ["기간"] = minutes == 0 ? "영구" : $"{minutes}분",
-                        ["발급자"] = adminName, ["출처"] = "인게임",
-                    });
 
                     Server.NextFrame(() => CommandHelpers.Broadcast(plugin, $"{adminName} 님이 {pName} 을(를) {Korean(type)}했습니다."));
                 }
@@ -129,12 +122,6 @@ public static class MuteCommands
 
                 if (ulong.TryParse(sidLocal, out var ul))
                     Server.NextFrame(() => plugin.Enforcement.RemoveMute(ul, type));
-
-                plugin.Discord.Send("unmute", new()
-                {
-                    ["대상"] = sidLocal, ["종류"] = type, ["사유"] = reason,
-                    ["해제자"] = adminName, ["출처"] = "인게임",
-                });
 
                 Server.NextFrame(() => CommandHelpers.Reply(info, plugin, $"{sidLocal} {Korean(type)} 해제 완료."));
             }

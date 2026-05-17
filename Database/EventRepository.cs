@@ -51,6 +51,24 @@ public sealed class EventRepository
         return result;
     }
 
+    /// <summary>
+    /// 다중 서버 환경에서 Discord 알림 중복 방지.
+    /// 한 이벤트당 정확히 한 플러그인 인스턴스만 true 반환 (DB atomic UPDATE).
+    /// </summary>
+    public async Task<bool> TryClaimDiscordAsync(long eventId)
+    {
+        await using var conn = await _factory.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            UPDATE sa_admin_events
+            SET discord_posted_at = NOW()
+            WHERE id = @id AND discord_posted_at IS NULL
+        """;
+        cmd.Parameters.AddWithValue("@id", eventId);
+        var affected = await cmd.ExecuteNonQueryAsync();
+        return affected > 0;
+    }
+
     public async Task EmitAsync(
         string eventType,
         string? targetSteamId,

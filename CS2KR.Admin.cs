@@ -33,6 +33,7 @@ public sealed class CS2KRAdminPlugin : BasePlugin, IPluginConfig<Config>
     public ServerIdentityService Identity { get; private set; } = null!;
 
     public int? ServerId { get; internal set; }
+    public string? ServerName { get; internal set; }
 
     public void OnConfigParsed(Config config)
     {

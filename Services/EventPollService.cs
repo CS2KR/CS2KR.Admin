@@ -8,6 +8,9 @@ namespace CS2KR.Admin.Services;
 /// <summary>
 /// sa_admin_events 를 짧은 간격으로 폴링하여 새 이벤트를 즉시 처리.
 /// 메모리 _cursor 로 last seen id 추적. 모든 게임 객체 접근은 Server.NextFrame.
+///
+/// Discord 발송 중복 방지: 다중 서버 환경에서 동일 이벤트로 N번 발송되는 문제를
+/// EventRepository.TryClaimDiscordAsync 의 atomic UPDATE 로 해결 — 한 플러그인만 발송 성공.
 /// </summary>
 public sealed class EventPollService
 {
@@ -35,14 +38,8 @@ public sealed class EventPollService
         {
             while (!ct.IsCancellationRequested)
             {
-                try
-                {
-                    await PollOnceAsync();
-                }
-                catch (Exception e)
-                {
-                    _plugin.Logger.LogError(e, "이벤트 폴링 실패");
-                }
+                try { await PollOnceAsync(); }
+                catch (Exception e) { _plugin.Logger.LogError(e, "이벤트 폴링 실패"); }
                 try { await Task.Delay(interval, ct); } catch (TaskCanceledException) { break; }
             }
         }, ct);
@@ -60,14 +57,8 @@ public sealed class EventPollService
 
         foreach (var ev in events)
         {
-            try
-            {
-                await HandleAsync(ev);
-            }
-            catch (Exception e)
-            {
-                _plugin.Logger.LogError(e, "이벤트 처리 실패 id={Id} type={T}", ev.Id, ev.EventType);
-            }
+            try { await HandleAsync(ev); }
+            catch (Exception e) { _plugin.Logger.LogError(e, "이벤트 처리 실패 id={Id} type={T}", ev.Id, ev.EventType); }
             _cursor = ev.Id;
         }
     }
@@ -75,96 +66,101 @@ public sealed class EventPollService
     private async Task HandleAsync(AdminEvent ev)
     {
         var payload = ParsePayload(ev.RawPayload);
-        var source = payload.TryGetValue("source", out var s) ? s?.ToString() : null;
-        var reason = payload.TryGetValue("reason", out var r) ? r?.ToString() ?? "" : "";
-        var muteType = payload.TryGetValue("type", out var t) ? t?.ToString() : null;
-        var adminName = payload.TryGetValue("admin_name", out var an) ? an?.ToString() ?? "" : "";
-        var adminSteamId = payload.TryGetValue("admin_steamid", out var asi) ? asi?.ToString() ?? "" : "";
-        var duration = payload.TryGetValue("duration", out var d) && d != null ? d.ToString() : "0";
+        var reason = Get(payload, "reason") ?? "";
+        var muteType = Get(payload, "type");
+        var adminName = Get(payload, "admin_name") ?? "Unknown";
+        var adminSteamId = Get(payload, "admin_steamid") ?? "0";
+        var targetName = Get(payload, "target_name");
+        var duration = GetInt(payload, "duration");
 
+        // 1) 인게임 enforcement (메인스레드에서)
         switch (ev.EventType)
         {
             case "ban":
                 if (ulong.TryParse(ev.TargetSteamId, out var bsid))
                     Server.NextFrame(() => _plugin.Enforcement.KickIfPresent(bsid, reason));
-                if (source == "web")
-                    _plugin.Discord.Send("ban", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["사유"] = reason, ["기간(분)"] = duration,
-                        ["발급자"] = adminName, ["출처"] = "웹",
-                    });
                 break;
-
-            case "unban":
-                if (source == "web")
-                    _plugin.Discord.Send("unban", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["사유"] = reason,
-                        ["해제자"] = adminName, ["출처"] = "웹",
-                    });
-                break;
-
-            case "ban_edit":
-                if (source == "web")
-                    _plugin.Discord.Send("ban_edit", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["사유"] = reason, ["기간(분)"] = duration,
-                        ["수정자"] = adminName, ["출처"] = "웹",
-                    });
-                break;
-
             case "mute":
                 if (ulong.TryParse(ev.TargetSteamId, out var msid) && !string.IsNullOrEmpty(muteType))
                     Server.NextFrame(() => _plugin.Enforcement.ApplyMute(msid, muteType));
-                if (source == "web")
-                    _plugin.Discord.Send("mute", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["종류"] = muteType,
-                        ["사유"] = reason, ["기간(분)"] = duration,
-                        ["발급자"] = adminName, ["출처"] = "웹",
-                    });
                 break;
-
             case "unmute":
                 if (ulong.TryParse(ev.TargetSteamId, out var umsid))
                     Server.NextFrame(() => _plugin.Enforcement.RemoveMute(umsid, muteType));
-                if (source == "web")
-                    _plugin.Discord.Send("unmute", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["종류"] = muteType ?? "전체",
-                        ["사유"] = reason, ["해제자"] = adminName, ["출처"] = "웹",
-                    });
                 break;
-
-            case "mute_edit":
-                if (source == "web")
-                    _plugin.Discord.Send("mute_edit", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["종류"] = muteType,
-                        ["사유"] = reason, ["기간(분)"] = duration,
-                        ["수정자"] = adminName, ["출처"] = "웹",
-                    });
-                break;
-
             case "kick":
                 if (ulong.TryParse(ev.TargetSteamId, out var ksid))
                     Server.NextFrame(() => _plugin.Enforcement.KickIfPresent(ksid, reason));
-                if (source == "web")
-                    _plugin.Discord.Send("kick", new()
-                    {
-                        ["대상"] = ev.TargetSteamId, ["사유"] = reason,
-                        ["발급자"] = adminName, ["출처"] = "웹",
-                    });
                 break;
-
             case "reload_admins":
                 await _plugin.Permissions.ReloadAsync();
                 break;
+        }
 
+        // 2) Discord 발신 — 중복 방지를 위해 atomic claim. 한 플러그인만 true.
+        if (!await _plugin.EventRepo.TryClaimDiscordAsync(ev.Id))
+            return;
+
+        var serverName = await ResolveServerNameAsync(ev.ServerId);
+        var targetSid = ev.TargetSteamId ?? "0";
+
+        switch (ev.EventType)
+        {
+            case "ban":
+                _plugin.Discord.SendBan(new DiscordWebhookService.BanInfo(
+                    targetSid, targetName, adminSteamId, adminName, reason, duration, serverName));
+                break;
+            case "unban":
+                _plugin.Discord.SendUnban(new DiscordWebhookService.UnbanInfo(
+                    targetSid, adminSteamId, adminName, reason, serverName));
+                break;
+            case "ban_edit":
+                _plugin.Discord.SendBanEdit(new DiscordWebhookService.BanEditInfo(
+                    targetSid, adminSteamId, adminName, reason, duration, serverName));
+                break;
+            case "mute":
+                _plugin.Discord.SendMute(new DiscordWebhookService.MuteInfo(
+                    targetSid, targetName, adminSteamId, adminName, reason, duration,
+                    muteType ?? "MUTE", serverName));
+                break;
+            case "unmute":
+            case "mute_edit":
+                _plugin.Discord.SendUnmute(new DiscordWebhookService.UnmuteInfo(
+                    targetSid, adminSteamId, adminName, reason, muteType, serverName));
+                break;
+            case "kick":
+                _plugin.Discord.SendKick(new DiscordWebhookService.KickInfo(
+                    targetSid, targetName, adminSteamId, adminName, reason, serverName));
+                break;
             default:
-                _plugin.Logger.LogDebug("알 수 없는 이벤트 타입: {T}", ev.EventType);
+                _plugin.Logger.LogDebug("Discord 미지원 이벤트 타입: {T}", ev.EventType);
                 break;
         }
+    }
+
+    private async Task<string?> ResolveServerNameAsync(int? serverId)
+    {
+        if (serverId == null) return null;
+        try { return await _plugin.ServerRepo.GetHostnameByIdAsync(serverId.Value); }
+        catch { return null; }
+    }
+
+    // ───── payload 헬퍼 ─────
+
+    private static string? Get(Dictionary<string, object?> d, string key)
+        => d.TryGetValue(key, out var v) ? v?.ToString() : null;
+
+    private static int GetInt(Dictionary<string, object?> d, string key)
+    {
+        if (!d.TryGetValue(key, out var v) || v == null) return 0;
+        return v switch
+        {
+            int i => i,
+            long l => (int)l,
+            double dd => (int)dd,
+            string s => int.TryParse(s, out var p) ? p : 0,
+            _ => 0,
+        };
     }
 
     private static Dictionary<string, object?> ParsePayload(string? raw)

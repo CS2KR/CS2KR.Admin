@@ -1,6 +1,7 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Commands;
+using CS2KR.Admin.Services;
 
 namespace CS2KR.Admin.Commands;
 
@@ -22,13 +23,14 @@ public static class ServerCommands
         if (!CommandHelpers.RequireFlag(plugin, caller, "@css/changemap", info)) return;
         if (info.ArgCount < 2) { CommandHelpers.Reply(info, plugin, "사용법: css_map <맵이름>"); return; }
         var map = info.GetArg(1).Trim();
-        CommandHelpers.Broadcast(plugin, $"{CommandHelpers.AdminName(caller)} 님이 맵을 {map} 으로 변경합니다.");
+        var adminName = CommandHelpers.AdminName(caller);
+        var adminSid = CommandHelpers.AdminSteamId(caller);
+
+        CommandHelpers.Broadcast(plugin, $"{adminName} 님이 맵을 {map} 으로 변경합니다.");
         Server.ExecuteCommand($"changelevel {map}");
 
-        plugin.Discord.Send("map", new()
-        {
-            ["맵"] = map, ["실행자"] = CommandHelpers.AdminName(caller), ["출처"] = "인게임",
-        });
+        plugin.Discord.SendMapChange(new DiscordWebhookService.MapInfo(
+            adminSid, adminName, map, plugin.ServerName));
     }
 
     private static void OnRcon(CS2KRAdminPlugin plugin, CCSPlayerController? caller, CommandInfo info)
@@ -36,13 +38,14 @@ public static class ServerCommands
         if (!CommandHelpers.RequireFlag(plugin, caller, "@css/rcon", info)) return;
         if (info.ArgCount < 2) { CommandHelpers.Reply(info, plugin, "사용법: css_rcon <명령>"); return; }
         var cmd = string.Join(' ', Enumerable.Range(1, info.ArgCount - 1).Select(i => info.GetArg(i)));
+        var adminName = CommandHelpers.AdminName(caller);
+        var adminSid = CommandHelpers.AdminSteamId(caller);
+
         Server.ExecuteCommand(cmd);
         CommandHelpers.Reply(info, plugin, $"RCON 실행: {cmd}");
 
-        plugin.Discord.Send("rcon", new()
-        {
-            ["명령"] = cmd, ["실행자"] = CommandHelpers.AdminName(caller), ["출처"] = "인게임",
-        });
+        plugin.Discord.SendRcon(new DiscordWebhookService.RconInfo(
+            adminSid, adminName, cmd, plugin.ServerName));
     }
 
     private static void OnWho(CS2KRAdminPlugin plugin, CCSPlayerController? caller, CommandInfo info)

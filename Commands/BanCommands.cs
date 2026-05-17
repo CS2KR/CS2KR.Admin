@@ -58,19 +58,11 @@ public static class BanCommands
                         CommandHelpers.PayloadJson(new
                         {
                             reason, duration = minutes,
+                            target_name = pName,
                             admin_steamid = adminSid, admin_name = adminName, source = "ingame",
                         }), null);
 
                     Server.NextFrame(() => plugin.Enforcement.KickIfPresent(target.SteamID, reason));
-
-                    plugin.Discord.Send("ban", new()
-                    {
-                        ["대상"] = $"{pName} ({pSid})",
-                        ["사유"] = reason,
-                        ["기간"] = minutes == 0 ? "영구" : $"{minutes}분",
-                        ["발급자"] = adminName,
-                        ["출처"] = "인게임",
-                    });
 
                     Server.NextFrame(() =>
                     {
@@ -110,11 +102,6 @@ public static class BanCommands
                 await plugin.BanRepo.UnbanBySteamIdAsync(steamid, adminSid, reason);
                 await plugin.EventRepo.EmitAsync("unban", steamid, null,
                     CommandHelpers.PayloadJson(new { reason, admin_steamid = adminSid, admin_name = adminName, source = "ingame" }), null);
-
-                plugin.Discord.Send("unban", new()
-                {
-                    ["대상"] = steamid, ["사유"] = reason, ["해제자"] = adminName, ["출처"] = "인게임",
-                });
 
                 Server.NextFrame(() => CommandHelpers.Reply(info, plugin, $"{steamid} 언밴 완료."));
             }
