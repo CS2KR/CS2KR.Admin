@@ -18,8 +18,8 @@ public sealed class DiscordWebhookService
     private readonly DiscordConfig _config;
     private readonly ILogger _logger;
 
-    private const int FOOTER_ICON_SIZE = 16;
-    private const string BRAND_NAME = "cs2.kr Admin";
+    private const string BRAND_NAME = "CS2.KR";
+    private static readonly TimeSpan KST_OFFSET = TimeSpan.FromHours(9);
 
     public DiscordWebhookService(DiscordConfig config, ILogger logger)
     {
@@ -256,7 +256,7 @@ public sealed class DiscordWebhookService
             url,
             description,
             fields = safeFields,
-            timestamp = DateTime.UtcNow.ToString("o"),
+            timestamp = DateTimeOffset.UtcNow.ToOffset(KST_OFFSET).ToString("o"),
             footer = new { text = BRAND_NAME },
         };
     }
