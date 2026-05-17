@@ -1,0 +1,35 @@
+{
+  "Database": {
+    "Host": "127.0.0.1",
+    "Port": 3306,
+    "Database": "cs2kr",
+    "Username": "cs2kr",
+    "Password": "REPLACE_WITH_DB_PASSWORD"
+  },
+  "Discord": {
+    "WebhookUrl": "https://discord.com/api/webhooks/REPLACE/WITH/YOUR/URL",
+    "Enabled": true
+  },
+  "ServerIdOverride": 0,
+  "PollIntervalSeconds": 1.0,
+  "BanReasons": ["핵 사용", "스크립트 사용", "비매너", "광고", "트롤링"],
+  "MuteReasons": ["욕설", "스팸", "비매너", "광고"],
+  "BanDurations": [
+    { "label": "30분", "minutes": 30 },
+    { "label": "1시간", "minutes": 60 },
+    { "label": "1일", "minutes": 1440 },
+    { "label": "7일", "minutes": 10080 },
+    { "label": "30일", "minutes": 43200 },
+    { "label": "영구", "minutes": 0 }
+  ],
+  "MuteDurations": [
+    { "label": "5분", "minutes": 5 },
+    { "label": "30분", "minutes": 30 },
+    { "label": "1시간", "minutes": 60 },
+    { "label": "1일", "minutes": 1440 },
+    { "label": "영구", "minutes": 0 }
+  ],
+  "BroadcastBans": true,
+  "ChatPrefix": " [CS2KR] ",
+  "KickMessageBanned": "CS2KR 에서 차단되었습니다. 사유: {0}"
+}

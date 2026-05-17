@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>CS2KR.Admin</RootNamespace>
+    <AssemblyName>CS2KR.Admin</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CounterStrikeSharp.API" Version="1.0.367" />
+    <PackageReference Include="MySqlConnector" Version="2.3.7" />
+  </ItemGroup>
+
+</Project>
